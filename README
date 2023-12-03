@@ -1,0 +1,181 @@
+% Nume: Ureche Andreea-Maria
+% Grupa: 312CC            
+            ~METODE NUMERICE TEMA1~
+
+----Markov-is-coming----
+
+Voi explica functionalitatea fiecarei functii folosite pentru
+rezolvarea aceastui task:
+
+- function [Labyrinth] = parse_labyrinth(file_path) 
+ Functia primeste o cale relativa catre un fisier unde 
+ se afla reprezentarea unui labirint, asa cum a fost descris
+ in enuntul temei.
+ Se deschide fisierul text pentru citire si se citesc
+ datele aflate pe prima linie (m,n) ,adica numarul de
+ linii si numarul de coloane al labirintului/matricei.
+ Se initializeaza 'Labyrinth' cu zerouri , dar si un 
+ cell-array .
+ Se parcurg elementele matricei din fisier , iar in 
+ cell-array-ul creat se va stoca conversia fiecarui element
+ la valoarea sa in binar ,reprezentata pe 4 biti,reprezentand
+ codificarea peretilor labirintului.
+ Apoi , se va prelucra acest cell-array pentru a transforma
+ din nou reprezentarile binare in decimal si se vor 
+ salva in matricea codificarilor,Labyrinth.
+  
+- function [Adj] = get_adjacency_matrix(Labyrinth)
+ Functia primeste matricea codificarilor si intoarce
+ matricea de adiacenta.
+ Se retin mai intai dimensiunile matricei (nrows,ncols) si
+ deoarece in matricea de adiacenta vor exista 2
+ stari suplimentare(WIN ,LOSE) , se initializeaza 
+ aceasta matrice cu n*m+2. Pentru ca matricea de adiacenta
+ va avea majoritatea elementelor nule , se va folosi
+ functia 'sparse' pentru a creea o matrice rara.
+ Se va initializa un index ca fiind (i-1)*ncols + j reprezentand
+ indicele celulei si parcurgand matricea codificarilor,Labyrinth,
+ cu 2 for-uri , se va testa daca exista o cale valida intre 
+ noduri (daca nu exista zid intre ele). Astfel,folosind
+ functia 'bitget' vom putea umple matricea de adiacenta
+ cu valoarea 1 acolo unde exista un drum valid intre noduri
+ ,sau 0 in caz contrar , respectand codificarea descrisa in
+ enuntul temei (unde bitul setat pe 1 pe o anumita pozitie
+  reprezinta un zid in directia respectiva).
+  Deoarece stim ca peretii nu sunt unidirectionali ,vom
+  face sectorul corespunzator matricei simetric.
+  Pentru a tine cont si de starile suplimentare(WIN,LOSE),vom
+  testa daca exista zid la nordul sau sudul celulelor
+  care se afla pe prima , respectiv pe ultima linie 
+  (starile de castig se suprapun cu limita superioara si inferioara);
+  respectiv pentru starile care duc la pierdere(LOSE),vom testa daca 
+  exista zid la estul sau vestul celulelor de pe prima si ultima coloana.
+  La final , vom adauga legaturi in matricea de adiacenta si pentru
+  starile de castig si de pierdere care duc la ele insele.
+
+- function [Link] = get_link_matrix(Labyrinth)
+  Functia primeste matricea codificarilor labirintului si returneaza
+  matricea legaturilor.
+  Se citesc mai intai dimensiunile matricei Labyrinth (nrows,ncols),
+  si precum la functia pentru matricea de adiacenta , se adauga 2
+  stari suplimentare(WIN,LOSE) , iar matricea legaturilor va fi 
+  initializata de asemenea ca fiind o matrice rara pentru a 
+  folosi eficient memoria.
+  Vom apela functia get_adjacency_matrix(Labyrinth) pentru a retine 
+  matricea de adiacenta in 'Adj'.
+  Deoarce matricea legaturilor contine probabilitatile de tranzitie
+  de la o stare la alta , inseamna ca pentru a o construi vom avea nevoie
+  de matricea de adiacenta. Stiind ca suma elementelor de pe fiecare linie
+  este 1 , vom calcula suma de pe fiecare linie pe directia 2(coloane) si 
+  le vom stoca intr-un vector 'row_sums'. Apoi, pentru a popula matricea
+  legaturilor , vom imparti elementele de pe linie din matricea de adiacenta
+  la suma elementelor de pe linia respectiva (row_sums(i)).
+  Astfel,vom obtine matricea legaturilor.
+
+- function [G, c] = get_Jacobi_parameters(Link)
+ Functia primeste matricea legaturilor si returneaza matricea de iteratie
+ precum si vectorul de iteratie pentru metoda Jacobi.
+ Functia obtine mai intai dimensiunile matricei legaturilor
+ iar apoi obtine matricea si vectorul de itertatie 
+ din metoda Jacobi (stiind ca ne aflam deja
+ la forma finala [x = G*x + c] ), iterand prin matricea
+ legaturilor exceptand starile WIN SI LOSE .
+ Am retinut in vectorul c1 valorile din ultima coloana 
+ a matricei legaturilor , iar pentru ca c trebuie 
+ sa fie un vector rar , am folosit functia sparse pentru c1.
+
+- function [x, err, steps] = perform_iterative(G, c, x0, tol, max_steps)
+ Functia primeste matricea si vectorul de iteratie,o aproximatie
+ initiala, o toleranta si numarul maxim de pasi.
+ Functia aplica metoda Jacobi si returneaza vectorul
+ solutie 'x'  , eroarea 'err' si numarul de pasi 'steps'.
+
+- function [path] = heuristic_greedy(start_position, probabilities, Adj) 
+ Functia  primeste o pozitie de start , vectorul extins al 
+  probabilitatilor ,si matricea de adiacenta a lantului Markov .
+  Functia urmareste  algoritmul euristic descris in enuntul temei.
+  Funcția incepe prin initializarea unui vector 'path' cu pozitia
+  de pornire si un vector 'visited' care contine valori zero
+  pentru fiecare pozitie din 'probabilities'. Pozitia de pornire
+  este marcata ca fiind vizitata si se incepe cautarea pentru
+  a ajunge la starea de castig.
+  Functia verifica dacă pozitia curenta este starea de castig. 
+  In acest caz, functia se opreste si returneaza calea gasita .
+  In caz contrar, funcția gaseste vecinii nevizitati ai
+  pozitiei curente cu cea mai mare probabilitate de castig.
+  Daca nu există vecini nevizitati, pozitia curenta
+  este eliminata. In caz contrar, vecinul nevizitat
+  cu cea mai mare probabilitate de a ajunge la castig este 
+  adaugat la calea de cautare.
+  Dacă functia ajunge la sfarsitul caii de cautare fara a gasi 
+  starea de castig, functia returneaza o cale goala.
+
+- function [decoded_path] = decode_path(path, lines, cols)
+  Functia  primeste cale validă (sub forma unui vector coloană) si 
+  dimesniunile labirintului si  returneaza un vector de perechi
+  (matrice cu două coloane).
+  Functia initializeaza mai intai matricea 'decoded_path',
+  cu 2 coloane si nr de pozitii din cale.
+  Iterand prin cale, se calculeaza randul si coloana 
+  corespunzatoare din matricea labirintului utilizând 
+  operatorul  (ceil) și operatorul  (mod).
+  Rezultatul este retinut in matricea decoded_path la indicele
+  corespunzator, iar ultima pereche este eliminata.
+
+
+----Linear-Regression---
+
+Voi explica functionalitatea fiecarei functii folosite pentru
+rezolvarea aceastui task:
+
+- function [Y, InitialMatrix] = parse_data_set_file(file_path)
+  Functia primeste o cale relativa catre un fisier unde se 
+  afla datele pentru un set.
+  Functia deschide mai intai fisierul in modul de citire
+  si verifica daca a fost deschis cu succes.
+  Apoi citeste dimensiunile setului de date(n este numarul de 
+  predictori , m numarul vectorilor de predictori) de pe prima linie
+  a fisierului .
+  Se initializeaza InitialMatrix ca fiind un cell array(se folosesc
+  tipuri de date distincte) si se citesc datele de pe fiecare linie
+  a fisierului , creeand astfel InitalMatrix .
+  Vectorul Y retine prima coloana din InitialMatrix , care este 
+  convertit de la un cell-array de string-uri la un array numeric folosind
+  functiile 'cellfun' si 'str2double'.
+  Apoi prima coloana din InitialMatrix se elimina , pentru a obtine
+  matricea de care avem nevoie (deoarce Y retine prima coloana).
+
+- function [FeatureMatrix] = prepare_for_regression(InitialMatrix)
+  Functia primeste matricea InitialMatrix si o modeleaza dupa format-ul 
+  cerut in enunt.
+  Se citesc mai intai dimensiunile matricei , si se initializeaza 
+  FeatureMatrix cu zeoruri si o coloana extra (pentru a tine cont de 
+  descompunerea valorilor 'semi-furnished' , 'furnished', 'unfurnished'
+   in 2 pozitii).
+  Se parcurge intreaga matrice si se construieste FeatureMatrix 
+  in functie de valorile de pe pozitiile matricei initiale,inlocuindu-le 
+  cu valorile corespunzatoare.
+
+- function [Error] = linear_regression_cost_function(Theta, Y, FeatureMatrix)
+  Functia implementeaza functia de cost asa cum a fost descrisa in enunt.
+  Functia primeste un vector coloana cu coeficientii θ1, ... θn (Theta) ,
+  un vector coloana cu valorile actuale (Y),si o matrice (FeatureMatrix) 
+  cu valorile predictorilor.
+  Functia initializeaza mai intai numarul de antrenamente .Apoi adauga o coloana
+  de 1 la matricea de predictori (FeatureMatrix) si calculeaza prezicerile
+  pentru vectorul Theta si matricea de predictori.
+  La final se calculeaza eroarea dintre preziceri si valorile
+  actuale .
+
+- function [Y, InitialMatrix] = parse_csv_file(file_path)
+  Functia primeste o cale relativa catre un fisier .csv si intoarce 
+  iesirea (Y) reprezentand coloana Price si matricea InitialMatrix.
+  Functia deschide fisierul .csv si il citeste linie cu linie.
+  Apoi extrage header-ul (numele coloanelor) si datele din fisier,
+  si initializeaza InitialMatrix si Y .
+  Cu 2 for-uri se parcurg liniile din fisier , se salveaza 
+  prima valoare in vectorul Y ca valoare numerica si se construieste
+  InitialMatrix cu celelalte valori, introducand datele ca string-uri 
+  sau double , in functie de caz.
+
+
